@@ -32,37 +32,56 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
   const allSectionsDone = SECTION_ORDER.every((k) => completed.has(k));
 
   return (
-    <div>
-      <div className="text-sm text-gray-600 mb-1"><Link href="/courses">Curriculum</Link> · Lesson</div>
-      <h1 className="text-3xl font-bold text-black">{lesson.title}</h1>
-      <div className="text-sm text-gray-600 mt-1">~{lesson.estimatedMinutes} min · {lesson.xpReward} XP on completion</div>
+    <div className="space-y-8">
+      <div className="glass-card p-8 shadow-2xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.26em] text-sky-700">Curriculum · Lesson</div>
+            <h1 className="mt-3 text-4xl font-semibold text-slate-950">{lesson.title}</h1>
+            <p className="mt-2 text-sm text-slate-600">~{lesson.estimatedMinutes} min · {lesson.xpReward} XP on completion</p>
+          </div>
+          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{lesson.estimatedMinutes} min</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{lesson.xpReward} XP</span>
+          </div>
+        </div>
+      </div>
 
       {xpBanner !== null && (
-        <div className="mt-4 rounded-lg border border-blue-500 bg-blue-50 text-blue-900 px-4 py-3">
+        <div className="rounded-3xl border border-sky-200 bg-sky-50 px-4 py-3 text-sky-900">
           🎉 Lesson completed! {xpBanner > 0 ? `+${xpBanner} XP` : 'You already earned XP for this lesson.'}
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-1 border-b border-gray-300">
-        {SECTION_ORDER.map((k) => (
-          <button
-            key={k}
-            onClick={() => setActive(k)}
-            className={`px-3 py-2 text-sm rounded-t-md border-b-2 ${
-              active === k
-                ? 'border-blue-500 text-black'
-                : 'border-transparent text-gray-600 hover:text-black'
-            }`}
-          >
-            {completed.has(k) && <span className="text-blue-600 mr-1">●</span>}
-            {SECTION_LABEL[k]}
-          </button>
-        ))}
+      <div className="overflow-x-auto rounded-t-3xl border-b border-slate-200 bg-white shadow-sm">
+        <div className="flex min-w-max gap-2 px-3 py-3">
+          {SECTION_ORDER.map((k) => (
+            <button
+              key={k}
+              onClick={() => setActive(k)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                active === k
+                  ? 'bg-slate-950 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {completed.has(k) && <span className="text-sky-400 mr-1">●</span>}
+              {SECTION_LABEL[k]}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <article className="prose-forge mt-6">
+      <article className="prose-forge rounded-b-3xl border border-t-0 border-slate-200 bg-white p-8 shadow-lg">
         {active === 'simpleExplanation' && <Markdown source={s.simpleExplanation.body} />}
-        {active === 'visual' && <Markdown source={s.visual.body} />}
+        {active === 'visual' && (
+          <div className="space-y-5">
+            <Markdown source={s.visual.body} />
+            {s.visual.diagramUrl && (
+              <img src={s.visual.diagramUrl} alt="Visual diagram" className="rounded-3xl border border-slate-200 bg-slate-50" />
+            )}
+          </div>
+        )}
         {active === 'deepBreakdown' && <Markdown source={s.deepBreakdown.body} />}
         {active === 'dryRun' && (
           <>
@@ -73,15 +92,19 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
         {active === 'commonMistakes' && <Markdown source={s.commonMistakes.body} />}
         {active === 'interviewQuestions' && (
           <div className="space-y-4">
-            {s.interviewQuestions.items.length === 0 && <p>Coming soon.</p>}
+            {s.interviewQuestions.items.length === 0 && <p className="text-slate-600">This lesson includes expert-style interview prompts for deeper learning.</p>}
             {s.interviewQuestions.items.map((q, i) => (
-              <details key={i} className="rounded-lg border border-gray-300 bg-gray-50 p-4">
-                <summary className="cursor-pointer font-medium text-black">
-                  {q.company && <span className="text-blue-600 text-xs mr-2">[{q.company}]</span>}
-                  <span className="text-gray-600 text-xs mr-2">difficulty {q.difficulty}/3</span>
-                  <Markdown source={q.prompt} inline />
+              <details key={i} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <summary className="cursor-pointer font-semibold text-slate-950">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    {q.company && <span className="rounded-full bg-slate-100 px-2 py-1">{q.company}</span>}
+                    <span>difficulty {q.difficulty}/3</span>
+                  </div>
+                  <div className="mt-2">
+                    <Markdown source={q.prompt} inline />
+                  </div>
                 </summary>
-                <div className="mt-3 text-gray-800">
+                <div className="mt-4 text-slate-700">
                   <Markdown source={q.answer} />
                 </div>
               </details>
@@ -90,49 +113,54 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
         )}
         {active === 'practiceProblems' && (
           <div>
-            {s.practiceProblems.items.length === 0 && <p>Coming soon.</p>}
-            <ul className="space-y-2">
+            {s.practiceProblems.items.length === 0 && <p className="text-slate-600">Practice prompts are available for every lesson to help you apply the concept.</p>}
+            <div className="space-y-3">
               {s.practiceProblems.items.map((p) => (
-                <li key={p.slug} className="flex items-center justify-between rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
-                  <span>{p.title}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                    p.difficulty === 'easy' ? 'border-green-500 text-green-700' :
-                    p.difficulty === 'medium' ? 'border-yellow-500 text-yellow-700' :
-                    'border-red-500 text-red-700'
+                <div key={p.slug} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="font-medium text-slate-900">{p.title}</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    p.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                    p.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
+                    'bg-rose-100 text-rose-700'
                   }`}>{p.difficulty}</span>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
         {active === 'thinkLikeEngineer' && <Markdown source={s.thinkLikeEngineer.body} />}
       </article>
 
-      <div className="mt-10 border-t border-gray-300 pt-6">
-        <h2 className="text-lg font-semibold text-black mb-3">Try it yourself</h2>
-        <CodeRunner
-          title="Event loop sandbox"
-          initial={[
-            "console.log('a');",
-            "setTimeout(() => console.log('b'), 0);",
-            "Promise.resolve().then(() => console.log('c'));",
-            "console.log('d');",
-          ].join('\n')}
-        />
-      </div>
+      <div className="space-y-6 md:flex md:items-center md:justify-between md:space-y-0">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-950">Try it yourself</h2>
+          <p className="mt-2 text-sm text-slate-600">Run sample code in the browser and inspect output instantly.</p>
+          <div className="mt-4">
+            <CodeRunner
+              title="Event loop sandbox"
+              initial={[
+                "console.log('a');",
+                "setTimeout(() => console.log('b'), 0);",
+                "Promise.resolve().then(() => console.log('c'));",
+                "console.log('d');",
+              ].join('\n')}
+            />
+          </div>
+        </div>
 
-      <div className="mt-10 flex items-center justify-between">
-        <Link href={`/quiz/${lesson.id}`} className="px-4 py-2 rounded-lg border border-gray-300 hover:border-blue-400 text-black">
-          Take the quiz →
-        </Link>
-        <button
-          onClick={complete}
-          disabled={!accessToken || !allSectionsDone}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-40"
-          title={allSectionsDone ? 'Mark lesson complete' : 'View all sections first'}
-        >
-          Mark lesson complete
-        </button>
+        <div className="flex flex-col gap-3">
+          <Link href={`/quiz/${lesson.id}`} className="inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-900 transition">
+            Take the quiz →
+          </Link>
+          <button
+            onClick={complete}
+            disabled={!accessToken || !allSectionsDone}
+            className="inline-flex items-center justify-center rounded-full bg-sky-700 px-6 py-3 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-40"
+            title={allSectionsDone ? 'Mark lesson complete' : 'View all sections first'}
+          >
+            Mark lesson complete
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,16 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/store';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { StatsCard } from '@/components/ui/StatsCard';
+import { ActivityGraph } from '@/components/ui/ActivityGraph';
+import { Heatmap } from '@/components/ui/Heatmap';
 
 interface Summary {
   xp: number;
@@ -29,10 +37,12 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto mt-16 text-center">
-        <p className="text-ink-300">You need to sign in to see your dashboard.</p>
-        <Link href="/login" className="inline-block mt-4 px-4 py-2 rounded-lg bg-brand-500 text-ink-950 font-semibold">
-          Sign in
+      <div className="mx-auto mt-16 max-w-xl rounded-3xl border border-border bg-surface p-10 text-center shadow-xl shadow-black/10">
+        <p className="text-sm text-text-secondary">You need to sign in to access your dashboard.</p>
+        <Link href="/login">
+          <Button className="mt-6" variant="primary">
+            Sign in
+          </Button>
         </Link>
       </div>
     );
@@ -47,92 +57,109 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="text-ink-400 text-sm">Welcome back,</p>
-        <h1 className="text-3xl font-bold text-white">{user.name}</h1>
+      <section className="rounded-[32px] border border-border bg-surface/95 p-8 shadow-2xl shadow-black/10">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <p className="text-sm uppercase tracking-[0.28em] text-secondary">Dashboard</p>
+            <h1 className="text-4xl font-semibold text-text-primary">Welcome back, {user.name}</h1>
+            <p className="max-w-2xl text-sm leading-7 text-text-secondary">
+              Your daily training hub for lessons, practice, and progress tracking.
+            </p>
+          </div>
+          <Button variant="secondary">Continue learning</Button>
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <StatsCard title="XP earned" value={user.xp.toString()} percent={progressPct} />
+        <StatsCard title="Current streak" value={`🔥 ${user.streak.current} days`} />
+        <StatsCard title="Lessons completed" value={summary ? `${summary.lessonsCompleted} / ${summary.totalLessons}` : 'Loading'} />
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <Card>
-          <div className="text-sm text-ink-400">XP</div>
-          <div className="text-3xl font-bold text-white mt-1">{user.xp}</div>
-          <div className="text-xs text-ink-400 mt-2">Level: <span className="text-brand-300">{user.level}</span></div>
-          <div className="mt-3 h-2 rounded-full bg-ink-800 overflow-hidden">
-            <div className="h-full bg-brand-500" style={{ width: `${progressPct}%` }} />
-          </div>
-          {nextLevel !== user.level && (
-            <div className="text-xs text-ink-500 mt-2">{nextThreshold - user.xp} XP to {nextLevel}</div>
-          )}
-        </Card>
-
-        <Card>
-          <div className="text-sm text-ink-400">Streak</div>
-          <div className="text-3xl font-bold text-white mt-1">🔥 {user.streak.current} day{user.streak.current === 1 ? '' : 's'}</div>
-          <div className="text-xs text-ink-400 mt-2">Longest: {user.streak.longest}</div>
-        </Card>
-
-        <Card>
-          <div className="text-sm text-ink-400">Lessons completed</div>
-          <div className="text-3xl font-bold text-white mt-1">
-            {summary?.lessonsCompleted ?? 0}
-            <span className="text-lg text-ink-500"> / {summary?.totalLessons ?? '—'}</span>
-          </div>
-          {summary && summary.totalLessons > 0 && (
-            <div className="mt-3 h-2 rounded-full bg-ink-800 overflow-hidden">
-              <div className="h-full bg-brand-500" style={{ width: `${(summary.lessonsCompleted / summary.totalLessons) * 100}%` }} />
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.24em] text-secondary">Progress overview</p>
+              <h2 className="text-xl font-semibold text-text-primary">Current learning pace</h2>
             </div>
-          )}
-        </Card>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <h2 className="text-lg font-semibold text-white mb-3">Recent activity</h2>
-          {!summary && <p className="text-ink-500 text-sm">{err ?? 'Loading…'}</p>}
-          {summary && summary.recentActivity.length === 0 && (
-            <p className="text-ink-500 text-sm">No activity yet. <Link href="/courses">Start a course →</Link></p>
-          )}
-          <ul className="space-y-2">
-            {summary?.recentActivity.map((a) => (
-              <li key={a.lessonSlug}>
-                <Link href={`/lessons/${a.lessonSlug}`} className="text-ink-100 hover:text-brand-300">
-                  ▸ {a.lessonTitle}
-                </Link>
-                <span className="text-xs text-ink-500 ml-2">{new Date(a.at).toLocaleString()}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card>
-          <h2 className="text-lg font-semibold text-white mb-3">Weak topics</h2>
-          {summary && summary.weakTopics.length === 0 && (
-            <p className="text-ink-500 text-sm">None detected yet. Keep taking quizzes to unlock personalized insights.</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {summary?.weakTopics.map((t) => (
-              <span key={t} className="text-sm px-3 py-1 rounded-full border border-ink-700 text-ink-200">{t}</span>
-            ))}
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Updated daily</span>
+          </div>
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm text-text-secondary">
+                <span>XP to next tier</span>
+                <span>{nextLevel === user.level ? 'Max' : `${nextThreshold - user.xp} XP`}</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-border">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${progressPct}%` }} />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-border bg-background p-5">
+                <p className="text-sm text-text-secondary">Weak topics</p>
+                <p className="mt-3 text-2xl font-semibold text-text-primary">{summary?.weakTopics.length ?? 0}</p>
+              </div>
+              <div className="rounded-3xl border border-border bg-background p-5">
+                <p className="text-sm text-text-secondary">Next milestone</p>
+                <p className="mt-3 text-2xl font-semibold text-text-primary">{nextLevel}</p>
+              </div>
+            </div>
           </div>
         </Card>
+
+        <div className="space-y-6">
+          <ActivityGraph />
+          <Heatmap />
+        </div>
       </div>
 
       <Card>
-        <h2 className="text-lg font-semibold text-white mb-3">Badges</h2>
-        {user.badges.length === 0 ? (
-          <p className="text-ink-500 text-sm">No badges yet — complete lessons to earn them.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {user.badges.map((b) => (
-              <span key={b} className="text-sm px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/40 text-brand-300">🏅 {b}</span>
-            ))}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-secondary">Recent activity</p>
+            <h2 className="text-xl font-semibold text-text-primary">What you worked on</h2>
+          </div>
+          <Button variant="ghost" size="sm">
+            View all
+          </Button>
+        </div>
+
+        {!summary && (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl bg-border/50 p-6" />
+              <div className="rounded-3xl bg-border/50 p-6" />
+            </div>
           </div>
         )}
+
+        {summary && summary.recentActivity.length === 0 && (
+          <p className="text-text-secondary">No recent activity yet — start a course to fill this feed.</p>
+        )}
+
+        {summary?.recentActivity.length ? (
+          <div className="space-y-4">
+            {summary.recentActivity.map((item) => (
+              <motion.div
+                key={item.lessonSlug}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="rounded-3xl border border-border bg-background p-5"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-text-primary">{item.lessonTitle}</p>
+                    <p className="text-sm text-text-secondary">Lesson progress</p>
+                  </div>
+                  <span className="text-xs text-text-secondary">{new Date(item.at).toLocaleString()}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : null}
       </Card>
     </div>
   );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-5">{children}</div>;
 }

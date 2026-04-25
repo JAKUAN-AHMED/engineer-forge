@@ -24,29 +24,59 @@ export default async function CoursesPage() {
   const courses = await getCourses();
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-black mb-2">Curriculum</h1>
-      <p className="text-gray-600 mb-8 max-w-2xl">
-        Five stages, from silicon to interview. Stage 1 builds the mental model; by Stage 5 you're practicing on company-tagged problems and mock interviews.
-      </p>
+    <div className="space-y-12 pb-16">
+      <div className="space-y-4">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary shadow-sm">
+          <span>Curriculum</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-text-primary">
+          Explore every course
+        </h1>
+        <p className="max-w-2xl text-lg text-text-secondary leading-relaxed">
+          Every lesson in this platform is authored and ready to use, with consistent structure, example walkthroughs, interview practice, and polished learning flows.
+        </p>
+      </div>
 
-      <div className="space-y-8">
+      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
         {courses.map((c) => (
-          <section key={c.slug}>
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-xl font-semibold text-black">
-                <span className="text-blue-600 font-mono text-sm">{String(c.stage).padStart(2, '0')}</span>{' '}
-                {c.title}
-              </h2>
-              <Link href={`/courses/${c.slug}`} className="text-sm text-blue-600 hover:text-blue-800">
-                View course →
+          <div key={c.slug} className="group glass-card flex flex-col justify-between p-8 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl">
+            <div>
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="inline-flex h-8 items-center justify-center rounded-full bg-primary/10 px-3 text-xs font-black uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/20">
+                  Stage {c.stage}
+                </div>
+                {c.icon ? (
+                  <div className="inline-flex h-8 w-auto min-w-[32px] items-center justify-center rounded-full bg-secondary/10 px-3 text-xs font-bold text-secondary ring-1 ring-inset ring-secondary/20">
+                    {c.icon}
+                  </div>
+                ) : null}
+              </div>
+              <h2 className="text-2xl font-bold text-text-primary group-hover:text-primary transition-colors">{c.title}</h2>
+              <p className="mt-4 text-sm leading-relaxed text-text-secondary">{c.description}</p>
+            </div>
+            
+            <div className="mt-8 space-y-6">
+              <div className="flex flex-wrap gap-2">
+                {c.tags.slice(0, 3).map((t) => (
+                  <span key={t} className="rounded-xl border border-border-glass bg-background/50 px-3 py-1.5 text-xs font-medium text-text-secondary shadow-sm">
+                    {t}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-4 border-t border-border-glass pt-5 text-xs font-semibold text-text-secondary">
+                <span>{c.moduleCount} modules</span>
+                <span className="text-border-glass">•</span>
+                <span>{c.lessonCount} lessons</span>
+                <span className="text-border-glass">•</span>
+                <span>~{c.estimatedHours}h</span>
+              </div>
+              
+              <Link href={`/courses/${c.slug}`} className="mt-2 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all group-hover:bg-primary/90 group-hover:shadow-primary/40 group-hover:scale-[1.02]">
+                Open course →
               </Link>
             </div>
-            <p className="text-sm text-gray-500 mt-1 mb-3">{c.description}</p>
-            <div className="text-sm text-gray-600">
-              {c.moduleCount} modules · {c.lessonCount} lessons · {c.estimatedHours} hours
-            </div>
-          </section>
+          </div>
         ))}
       </div>
     </div>

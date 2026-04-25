@@ -33,28 +33,28 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
 
   return (
     <div>
-      <div className="text-sm text-ink-400 mb-1"><Link href="/courses">Curriculum</Link> · Lesson</div>
-      <h1 className="text-3xl font-bold text-white">{lesson.title}</h1>
-      <div className="text-sm text-ink-400 mt-1">~{lesson.estimatedMinutes} min · {lesson.xpReward} XP on completion</div>
+      <div className="text-sm text-gray-600 mb-1"><Link href="/courses">Curriculum</Link> · Lesson</div>
+      <h1 className="text-3xl font-bold text-black">{lesson.title}</h1>
+      <div className="text-sm text-gray-600 mt-1">~{lesson.estimatedMinutes} min · {lesson.xpReward} XP on completion</div>
 
       {xpBanner !== null && (
-        <div className="mt-4 rounded-lg border border-brand-500/50 bg-brand-500/10 text-brand-100 px-4 py-3">
+        <div className="mt-4 rounded-lg border border-blue-500 bg-blue-50 text-blue-900 px-4 py-3">
           🎉 Lesson completed! {xpBanner > 0 ? `+${xpBanner} XP` : 'You already earned XP for this lesson.'}
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-1 border-b border-ink-800">
+      <div className="mt-6 flex flex-wrap gap-1 border-b border-gray-300">
         {SECTION_ORDER.map((k) => (
           <button
             key={k}
             onClick={() => setActive(k)}
             className={`px-3 py-2 text-sm rounded-t-md border-b-2 ${
               active === k
-                ? 'border-brand-500 text-white'
-                : 'border-transparent text-ink-400 hover:text-ink-100'
+                ? 'border-blue-500 text-black'
+                : 'border-transparent text-gray-600 hover:text-black'
             }`}
           >
-            {completed.has(k) && <span className="text-brand-400 mr-1">●</span>}
+            {completed.has(k) && <span className="text-blue-600 mr-1">●</span>}
             {SECTION_LABEL[k]}
           </button>
         ))}
@@ -75,13 +75,13 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
           <div className="space-y-4">
             {s.interviewQuestions.items.length === 0 && <p>Coming soon.</p>}
             {s.interviewQuestions.items.map((q, i) => (
-              <details key={i} className="rounded-lg border border-ink-800 bg-ink-900/40 p-4">
-                <summary className="cursor-pointer font-medium text-white">
-                  {q.company && <span className="text-brand-400 text-xs mr-2">[{q.company}]</span>}
-                  <span className="text-ink-400 text-xs mr-2">difficulty {q.difficulty}/3</span>
+              <details key={i} className="rounded-lg border border-gray-300 bg-gray-50 p-4">
+                <summary className="cursor-pointer font-medium text-black">
+                  {q.company && <span className="text-blue-600 text-xs mr-2">[{q.company}]</span>}
+                  <span className="text-gray-600 text-xs mr-2">difficulty {q.difficulty}/3</span>
                   <Markdown source={q.prompt} inline />
                 </summary>
-                <div className="mt-3 text-ink-200">
+                <div className="mt-3 text-gray-800">
                   <Markdown source={q.answer} />
                 </div>
               </details>
@@ -93,12 +93,12 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
             {s.practiceProblems.items.length === 0 && <p>Coming soon.</p>}
             <ul className="space-y-2">
               {s.practiceProblems.items.map((p) => (
-                <li key={p.slug} className="flex items-center justify-between rounded-lg border border-ink-800 bg-ink-900/40 px-4 py-3">
+                <li key={p.slug} className="flex items-center justify-between rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
                   <span>{p.title}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                    p.difficulty === 'easy' ? 'border-green-500/50 text-green-300' :
-                    p.difficulty === 'medium' ? 'border-yellow-500/50 text-yellow-300' :
-                    'border-red-500/50 text-red-300'
+                    p.difficulty === 'easy' ? 'border-green-500 text-green-700' :
+                    p.difficulty === 'medium' ? 'border-yellow-500 text-yellow-700' :
+                    'border-red-500 text-red-700'
                   }`}>{p.difficulty}</span>
                 </li>
               ))}
@@ -108,8 +108,8 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
         {active === 'thinkLikeEngineer' && <Markdown source={s.thinkLikeEngineer.body} />}
       </article>
 
-      <div className="mt-10 border-t border-ink-800 pt-6">
-        <h2 className="text-lg font-semibold text-white mb-3">Try it yourself</h2>
+      <div className="mt-10 border-t border-gray-300 pt-6">
+        <h2 className="text-lg font-semibold text-black mb-3">Try it yourself</h2>
         <CodeRunner
           title="Event loop sandbox"
           initial={[
@@ -122,13 +122,13 @@ export function LessonView({ lesson }: { lesson: LessonFull }) {
       </div>
 
       <div className="mt-10 flex items-center justify-between">
-        <Link href={`/quiz/${lesson.id}`} className="px-4 py-2 rounded-lg border border-ink-700 hover:border-brand-400">
+        <Link href={`/quiz/${lesson.id}`} className="px-4 py-2 rounded-lg border border-gray-300 hover:border-blue-400 text-black">
           Take the quiz →
         </Link>
         <button
           onClick={complete}
           disabled={!accessToken || !allSectionsDone}
-          className="px-4 py-2 rounded-lg bg-brand-500 text-ink-950 font-semibold hover:bg-brand-400 disabled:opacity-40"
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-40"
           title={allSectionsDone ? 'Mark lesson complete' : 'View all sections first'}
         >
           Mark lesson complete

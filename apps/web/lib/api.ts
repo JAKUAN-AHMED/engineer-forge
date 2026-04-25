@@ -6,7 +6,8 @@ async function request<T>(
   opts: RequestInit & { token?: string | null } = {},
 ): Promise<T> {
   const { token, headers, ...rest } = opts;
-  const res = await fetch(`${API_BASE}${path}`, {
+  const endpoint = path.startsWith('/api') ? path : `/api${path}`;
+  const res = await fetch(`${API_BASE}${endpoint}`, {
     ...rest,
     headers: {
       'Content-Type': 'application/json',
@@ -17,12 +18,22 @@ async function request<T>(
     cache: 'no-store',
   });
   if (!res.ok) {
+    const clone = res.clone();
     let body: unknown;
-    try { body = await res.json(); } catch { body = await res.text(); }
+    try {
+      body = await res.json();
+    } catch {
+      body = await clone.text();
+    }
     const msg = typeof body === 'object' && body && 'error' in body ? (body as { error: string }).error : `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  return (await res.json()) as T;
+
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return (await res.text()) as unknown as T;
+  }
 }
 
 export const api = {

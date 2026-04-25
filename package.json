@@ -1,0 +1,21 @@
+{
+  "name": "engineer-forge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Industry-grade training platform to level learners up to SWE L1 (JS/TS/Node + System Design + CS fundamentals).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:web": "npm run dev -w @forge/web",
+    "dev:api": "npm run dev -w @forge/api",
+    "seed": "npm run seed -w @forge/api"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

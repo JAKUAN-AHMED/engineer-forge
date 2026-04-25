@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.turbo/
+.vercel/
+.cache/
+pids/
+*.pid
+*.tsbuildinfo
+next-env.d.ts

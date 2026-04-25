@@ -1,0 +1,168 @@
+{
+  "slug": "event-loop",
+  "title": "The Event Loop (micro/macrotasks)",
+  "xpReward": 80,
+  "estimatedMinutes": 50,
+  "sections": {
+    "simpleExplanation": {
+      "body": "JavaScript is **single-threaded** — there is exactly one thread that runs your code. But somehow async code (timers, fetch, promises, clicks) still *feels* concurrent.\n\nThe **event loop** is the mechanism that makes this work. Think of it as a tireless clerk sitting next to a single desk (the **call stack**) and a few inboxes (task queues). The clerk follows one rule:\n\n> If the desk is empty, grab the next item from an inbox and put it on the desk.\n\nThat's it. Everything else is detail about *which* inbox to check first and *what* counts as async work."
+    },
+    "visual": {
+      "body": "```\n┌─────────────────────────────────────────┐\n│              JS Engine (V8)             │\n│                                         │\n│     ┌──────────────┐  ┌──────────────┐  │\n│     │  Call Stack  │  │     Heap     │  │\n│     │   (LIFO)     │  │ (objects)    │  │\n│     └──────┬───────┘  └──────────────┘  │\n└────────────┼────────────────────────────┘\n             │  ▲\n   pop/push  │  │\n             ▼  │\n       ┌──────────┐\n       │event-loop│ ← checks: stack empty? then microtasks, then one macrotask\n       └────┬─────┘\n            │\n   ┌────────┴────────────────────────────┐\n   ▼                                     ▼\n┌────────────────┐                 ┌─────────────────┐\n│ Microtask queue│  (higher prio)  │ Macrotask queue │\n│ Promise.then,  │                 │ setTimeout,     │\n│ queueMicrotask,│                 │ setInterval,    │\n│ MutationObs.   │                 │ I/O, UI events  │\n└────────────────┘                 └─────────────────┘\n```\n\nKey ordering rule (per 'tick'):\n1. Run the current synchronous code until the **call stack is empty**.\n2. **Drain the entire microtask queue** (not just one — *all* of it, even if new microtasks are added while draining).\n3. Take **exactly one** macrotask, push it onto the stack, run it.\n4. Go to step 2."
+    },
+    "deepBreakdown": {
+      "body": "### Who actually owns the event loop?\n\nThe event loop is defined by the **host environment**, not JavaScript itself. The ECMAScript spec only defines the *Job Queue* (microtasks). The browser's HTML spec defines the full event loop including macrotasks, rendering, and requestAnimationFrame. Node.js has its own event loop (libuv) with **phases** — timers → pending callbacks → idle/prepare → poll → check → close callbacks — and distinct queues per phase. So 'the event loop' is really a *family* of similar-but-not-identical loops.\n\n### Microtasks vs macrotasks\n\n- **Microtasks** (aka jobs): `Promise.then/catch/finally`, `queueMicrotask`, `MutationObserver` callbacks, and the internal 'await continuation'. They run **to exhaustion** between macrotasks — if a microtask enqueues another microtask, it runs in the same tick.\n- **Macrotasks** (aka tasks): `setTimeout`, `setInterval`, `setImmediate` (Node), I/O callbacks, `fetch` *completion*, UI events. Exactly **one macrotask runs per tick**.\n\nThis asymmetry is deliberate. Microtasks are meant for 'finish what you started' work (continue a promise chain) and should happen *before* the browser does any other work. Macrotasks are meant to be interleaved with rendering so the UI stays responsive.\n\n### Rendering fits in between\n\nIn browsers, after the microtask queue is drained and before the next macrotask, the browser *may* render. This is why `requestAnimationFrame` callbacks happen right before a paint — they're on a separate queue that the event loop consults in that rendering phase.\n\n### Node.js specifics\n\nNode's loop has phases. `setImmediate` fires in the **check** phase (after I/O), `setTimeout(fn, 0)` fires in the **timers** phase (at the top of the next tick if its delay has elapsed). This is why the classic trick question 'which fires first, `setImmediate` or `setTimeout(fn, 0)`?' has the answer: **it depends** on whether you're inside an I/O callback (setImmediate always wins there) or at the top level (race — usually timers wins by a hair, but not guaranteed).\n\nAlso: `process.nextTick` has **higher priority than microtasks**. It's a Node-only queue that drains before the microtask queue. Abuse of `process.nextTick` can starve I/O.\n\n### Why you care in interviews\n\nThe event loop is the #1 source of 'predict the output' questions at Google, Meta, Microsoft, Amazon, and every Indian unicorn. Candidates who can narrate the tick-by-tick behavior always outperform those who just 'know' that promises run before timeouts."
+    },
+    "dryRun": {
+      "body": "Classic example:\n\n```js\nconsole.log('1');\nsetTimeout(() => console.log('2'), 0);\nPromise.resolve().then(() => console.log('3'));\nconsole.log('4');\n```\n\nExpected output: `1 4 3 2`.\n\nWalk through it below — watch the call stack and queues step by step.",
+      "steps": [
+        {
+          "code": "console.log('1');",
+          "callStack": ["console.log('1')"],
+          "microtaskQueue": [],
+          "macrotaskQueue": [],
+          "explanation": "Sync: prints '1'. Frame pops."
+        },
+        {
+          "code": "setTimeout(() => console.log('2'), 0);",
+          "callStack": ["setTimeout(...)"],
+          "microtaskQueue": [],
+          "macrotaskQueue": ["() => console.log('2')"],
+          "explanation": "setTimeout hands its callback to the host. After the 0ms timer, the host enqueues it to the macrotask queue. The setTimeout call itself returns and pops."
+        },
+        {
+          "code": "Promise.resolve().then(() => console.log('3'));",
+          "callStack": ["Promise.resolve().then(...)"],
+          "microtaskQueue": ["() => console.log('3')"],
+          "macrotaskQueue": ["() => console.log('2')"],
+          "explanation": "Promise.resolve() produces an already-resolved promise. .then schedules its callback on the microtask queue. Frame pops."
+        },
+        {
+          "code": "console.log('4');",
+          "callStack": ["console.log('4')"],
+          "microtaskQueue": ["() => console.log('3')"],
+          "macrotaskQueue": ["() => console.log('2')"],
+          "explanation": "Sync: prints '4'. Frame pops. The initial synchronous script is now done."
+        },
+        {
+          "code": "// event loop: drain microtasks",
+          "callStack": ["() => console.log('3')"],
+          "microtaskQueue": [],
+          "macrotaskQueue": ["() => console.log('2')"],
+          "explanation": "Stack is empty → event loop pulls ALL microtasks. Prints '3'."
+        },
+        {
+          "code": "// event loop: take one macrotask",
+          "callStack": ["() => console.log('2')"],
+          "microtaskQueue": [],
+          "macrotaskQueue": [],
+          "explanation": "Microtask queue empty → event loop takes one macrotask. Prints '2'. Output so far: 1 4 3 2."
+        }
+      ]
+    },
+    "commonMistakes": {
+      "body": "### 1. Assuming `setTimeout(fn, 0)` runs 'immediately'\nIt doesn't. It runs *after the current macrotask finishes and the entire microtask queue drains*. If you're firing off 1000 promises in a loop, that `setTimeout(fn, 0)` you scheduled earlier might wait a long time.\n\n### 2. Using `async` to 'make something async'\n```js\nasync function log() { console.log('hi'); }\nlog();  // still runs synchronously up to the first await.\n```\n`async` only makes the function return a promise. The body runs synchronously until the first `await` — *that's* where it yields to the microtask queue.\n\n### 3. Starving the event loop\n```js\nfunction recurse() { Promise.resolve().then(recurse); }\nrecurse();  // UI frozen — microtasks run to exhaustion every tick.\n```\nThis pins the CPU because microtasks never yield. If you need to chunk work, use `setTimeout(fn, 0)` or `queueMicrotask` judiciously — not infinite chains.\n\n### 4. Confusing `process.nextTick` with `setImmediate` in Node\n`nextTick` ≈ microtask (higher priority). `setImmediate` = check-phase macrotask. They sound similar but are on opposite ends of priority.\n\n### 5. Relying on macrotask ordering across engines\nBrowser and Node order differently. Never assume `setTimeout(fn, 0)` and `setImmediate()` fire in a specific order unless you're inside an I/O callback."
+    },
+    "interviewQuestions": {
+      "items": [
+        {
+          "company": "Google",
+          "prompt": "Predict the output:\n```js\nconsole.log('a');\nsetTimeout(() => console.log('b'), 0);\nPromise.resolve().then(() => console.log('c')).then(() => console.log('d'));\nconsole.log('e');\n```",
+          "answer": "`a e c d b`. Sync: a, e. Microtasks drain: c (and its .then schedules d, which runs in same drain because microtask queue is exhaustive) → d. Then one macrotask: b.",
+          "difficulty": 2
+        },
+        {
+          "company": "Meta",
+          "prompt": "What's the difference between `queueMicrotask(fn)` and `Promise.resolve().then(fn)`?",
+          "answer": "Effectively none in terms of *when* fn runs — both go on the microtask queue. Differences: (1) `.then` wraps fn in a promise and catches any thrown error, turning it into a rejection; `queueMicrotask` lets errors propagate to the global error handler. (2) `queueMicrotask` is slightly cheaper (no promise allocation). Use `queueMicrotask` for fire-and-forget deferred side effects, `.then` when you actually want a promise chain.",
+          "difficulty": 2
+        },
+        {
+          "company": "Amazon",
+          "prompt": "Inside an I/O callback in Node, which fires first: `setTimeout(fn, 0)` or `setImmediate(fn)`?",
+          "answer": "`setImmediate` always fires first when scheduled from within an I/O callback, because the next phase after poll is `check` (setImmediate), and `timers` only runs at the top of the next loop iteration.",
+          "difficulty": 3
+        },
+        {
+          "company": "Microsoft",
+          "prompt": "Explain how `await` interacts with the event loop.",
+          "answer": "`await expr` is sugar for `Promise.resolve(expr).then(continuation)`. It suspends the async function, schedules the *continuation* (the rest of the function body) as a microtask once the awaited promise settles, and pops the function's frame off the stack. So code after an await always runs on a later microtask tick, never synchronously — even if the awaited value was already a resolved promise.",
+          "difficulty": 3
+        },
+        {
+          "company": "Uber",
+          "prompt": "How would you debug 'my UI is frozen but CPU is 100%' in a React app?",
+          "answer": "Most likely microtask starvation: some promise chain or recursive queueMicrotask is never yielding to macrotasks, so the browser never renders. Chrome DevTools → Performance tab → record → look for a long yellow 'Scripting' band with no purple 'Rendering' bands. Or look for a synchronous hot loop. Fix by chunking work with setTimeout(fn, 0) or requestIdleCallback, or by moving it off the main thread (Web Worker).",
+          "difficulty": 3
+        }
+      ]
+    },
+    "practiceProblems": {
+      "items": [
+        { "slug": "predict-output-basic-event-loop", "title": "Predict output: basic event loop", "difficulty": "easy" },
+        { "slug": "predict-output-async-await", "title": "Predict output: async/await order", "difficulty": "medium" },
+        { "slug": "implement-sleep", "title": "Implement `sleep(ms)` using promises", "difficulty": "easy" },
+        { "slug": "task-queue-polyfill", "title": "Write a task queue that runs N tasks in order", "difficulty": "medium" },
+        { "slug": "debounce-with-microtasks", "title": "Implement debounce — and explain why microtask vs macrotask matters", "difficulty": "hard" }
+      ]
+    },
+    "thinkLikeEngineer": {
+      "body": "Engineers don't memorize output orderings — they internalize the **model** and derive outputs on demand. When someone hands you an unfamiliar snippet, do this:\n\n1. **Separate sync from async.** What's the synchronous skeleton? That runs first, top to bottom.\n2. **Identify enqueueing calls.** Every `setTimeout`, `.then`, `await`, `queueMicrotask`, `setImmediate`, `process.nextTick` — label each with *which queue* it lands on.\n3. **Simulate the tick.** Stack empty? Drain microtasks *completely*. Take one macrotask. Repeat.\n4. **Watch for enqueue-during-drain.** Microtasks added while draining still run in the same drain. This is where most people get the wrong answer.\n\nThe same discipline scales to real code review. When you review a PR and see `Promise.all([...])` followed by a `setTimeout`, you should automatically ask: 'is the author assuming ordering that the event loop doesn't guarantee?'\n\nThe mental model also predicts real performance bugs:\n- A component that updates state inside a promise chain *can* starve renders if the chain never hits a macrotask.\n- `useEffect` cleanup + `async` fetch + unmount mid-flight is really a question about which microtask wins.\n- A Node server that does `process.nextTick(heavyWork)` in a hot path will starve I/O and appear 'slow' with zero CPU alarms.\n\nL3 candidates recite the rules. L4+ engineers reach for a whiteboard and start drawing queues."
+    }
+  },
+  "quiz": {
+    "title": "Event Loop — quick check",
+    "passingPct": 70,
+    "questions": [
+      {
+        "type": "mcq",
+        "prompt": "What's the output of:\n```js\nconsole.log(1);\nsetTimeout(() => console.log(2));\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);\n```",
+        "choices": ["1 2 3 4", "1 4 2 3", "1 4 3 2", "1 3 4 2"],
+        "correct": [2],
+        "explanation": "Sync prints 1 and 4. Microtask queue drains before any macrotask, so the promise callback (3) runs before the setTimeout (2).",
+        "points": 10
+      },
+      {
+        "type": "mcq",
+        "prompt": "When a microtask enqueues another microtask during a drain, when does the new one run?",
+        "choices": [
+          "In the same drain (before any macrotask)",
+          "After the next macrotask",
+          "Only on the next animation frame",
+          "It depends on the browser"
+        ],
+        "correct": [0],
+        "explanation": "The microtask queue is drained to exhaustion. Microtasks enqueued during the drain run in the same drain — that's the whole point.",
+        "points": 10
+      },
+      {
+        "type": "multi",
+        "prompt": "Which of these schedule a **microtask**? (select all that apply)",
+        "choices": ["setTimeout(fn, 0)", "Promise.resolve().then(fn)", "queueMicrotask(fn)", "setImmediate(fn)", "MutationObserver callback"],
+        "correct": [1, 2, 4],
+        "explanation": "Microtasks: `.then`, `queueMicrotask`, and MutationObserver. `setTimeout` and `setImmediate` are macrotasks.",
+        "points": 15
+      },
+      {
+        "type": "mcq",
+        "prompt": "`process.nextTick` in Node has which priority?",
+        "choices": [
+          "Lower than microtasks",
+          "Equal to microtasks",
+          "Higher than microtasks (runs before them)",
+          "Same as setImmediate"
+        ],
+        "correct": [2],
+        "explanation": "`process.nextTick` drains before the microtask queue — it's Node's highest-priority continuation mechanism. Abusing it can starve I/O.",
+        "points": 10
+      },
+      {
+        "type": "code-output",
+        "prompt": "Predict the exact output:\n```js\nasync function f() {\n  console.log('a');\n  await null;\n  console.log('b');\n}\nf();\nconsole.log('c');\n```",
+        "correct": "a c b",
+        "explanation": "`async` runs synchronously until the first await. Prints 'a'. `await null` = `await Promise.resolve(null)` — schedules continuation as microtask, pops f's frame. Main script continues, prints 'c'. Then microtask queue drains: prints 'b'.",
+        "points": 15
+      }
+    ]
+  }
+}

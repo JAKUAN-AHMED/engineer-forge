@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 
 export function Card({ children, className }: PropsWithChildren<{ className?: string }>) {
   return (
-    <div className={cn('rounded-3xl border border-border bg-surface p-6 shadow-xl shadow-black/5', className)}>
+    <div className={cn('glass-card p-6 md:p-8 hover:border-primary/20 transition-colors', className)}>
       {children}
     </div>
   );

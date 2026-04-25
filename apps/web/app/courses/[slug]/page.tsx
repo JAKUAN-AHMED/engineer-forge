@@ -44,18 +44,21 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   const lessonCount = modules.reduce((a, m) => a + m.lessons.length, 0);
 
   return (
-    <div className="space-y-10">
-      <div className="glass-card border border-white/80 p-8 shadow-2xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="text-sm uppercase tracking-[0.26em] text-sky-700">
+    <div className="space-y-10 pb-16 pt-2">
+      <div className="glass-card relative overflow-hidden p-8 md:p-10">
+        <div className="absolute right-0 top-0 h-96 w-96 bg-gradient-to-bl from-primary/10 to-transparent blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="flex-1">
+            <div className="text-sm font-bold uppercase tracking-[0.26em] text-secondary">
               Stage {course.stage}
             </div>
-            <h1 className="mt-3 text-4xl font-semibold text-slate-950">{course.title}</h1>
-            <p className="mt-4 max-w-3xl text-slate-600">{course.description}</p>
-            <p className="mt-4 max-w-3xl rounded-3xl bg-slate-950/5 px-4 py-3 text-sm text-slate-700">All course lessons are fully authored with explanations, dry-runs, common pitfalls, interview questions, and practice challenges.</p>
+            <h1 className="mt-3 text-4xl font-extrabold text-text-primary drop-shadow-sm">{course.title}</h1>
+            <p className="mt-4 max-w-3xl text-lg text-text-secondary">{course.description}</p>
+            <p className="mt-4 inline-block max-w-3xl rounded-2xl bg-surface px-5 py-3.5 text-sm font-medium text-text-secondary ring-1 ring-inset ring-white/5 shadow-inner">
+              All course lessons are fully authored with explanations, dry-runs, common pitfalls, interview questions, and practice challenges.
+            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-4 pt-4 md:pt-0">
             <CardLabel label="Modules" value={`${modules.length}`} />
             <CardLabel label="Lessons" value={`${lessonCount}`} />
             <CardLabel label="Duration" value={`~${course.estimatedHours}h`} />
@@ -65,29 +68,29 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
       <div className="space-y-8">
         {modules.map((m, i) => (
-          <section key={m.slug} className="glass-card border border-white/80 p-6 shadow-xl">
+          <section key={m.slug} className="glass-card p-6 md:p-8 hover:border-primary/20 transition-colors">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="text-xs uppercase tracking-[0.3em] text-sky-700">Module {String(i + 1).padStart(2, '0')}</div>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">{m.title}</h2>
+                <div className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Module {String(i + 1).padStart(2, '0')}</div>
+                <h2 className="mt-2 text-2xl font-bold text-text-primary bg-clip-text">{m.title}</h2>
               </div>
-              <div className="text-sm text-slate-500">{m.lessons.length} lessons</div>
+              <div className="text-sm font-semibold text-text-secondary whitespace-nowrap bg-surface px-3 py-1.5 rounded-full ring-1 ring-inset ring-white/5">{m.lessons.length} lessons</div>
             </div>
-            <p className="mt-3 text-slate-600">{m.description}</p>
-            <div className="mt-6 grid gap-3">
+            <p className="mt-4 max-w-4xl text-text-secondary">{m.description}</p>
+            <div className="mt-8 grid gap-4">
               {m.lessons.map((l, j) => (
                 <Link
                   key={l.slug}
                   href={`/lessons/${l.slug}`}
-                  className="flex flex-col rounded-3xl border border-slate-200 bg-white p-4 text-slate-900 transition hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+                  className="group flex flex-col rounded-2xl border border-border-glass bg-background p-5 text-text-primary transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Lesson {String(j + 1).padStart(2, '0')}</div>
-                    <div className="mt-2 text-lg font-semibold">{l.title}</div>
+                  <div className="flex-1 pr-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary group-hover:text-primary transition-colors">Lesson {String(j + 1).padStart(2, '0')}</div>
+                    <div className="mt-2 text-lg font-bold group-hover:text-text-primary transition-colors">{l.title}</div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 sm:mt-0 sm:text-right">
-                    <span className="rounded-full bg-slate-100 px-2 py-1">{l.estimatedMinutes} min</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-1">{l.authored ? 'Complete' : 'Edited'}</span>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs sm:mt-0 sm:text-right font-semibold">
+                    <span className="rounded-md bg-surface px-3 py-1.5 text-text-secondary ring-1 ring-inset ring-white/5 shadow-sm">{l.estimatedMinutes} min</span>
+                    <span className={`rounded-md px-3 py-1.5 shadow-sm ring-1 ring-inset ${l.authored ? 'bg-primary/20 text-primary ring-primary/30' : 'bg-surface text-text-secondary ring-white/5'}`}>{l.authored ? 'Complete' : 'Edited'}</span>
                   </div>
                 </Link>
               ))}
@@ -101,9 +104,9 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
 function CardLabel({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl bg-slate-50 px-4 py-3 text-center">
-      <div className="text-xl font-semibold text-slate-950">{value}</div>
-      <div className="text-xs uppercase tracking-[0.26em] text-slate-500 mt-1">{label}</div>
+    <div className="flex-1 min-w-[100px] rounded-2xl border border-border-glass bg-surface/80 px-4 py-4 text-center shadow-lg backdrop-blur-sm transition hover:shadow-xl hover:-translate-y-0.5">
+      <div className="text-2xl font-extrabold text-text-primary drop-shadow-sm">{value}</div>
+      <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-secondary mt-1">{label}</div>
     </div>
   );
 }

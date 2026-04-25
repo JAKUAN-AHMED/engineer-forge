@@ -42,6 +42,9 @@ const config: Config = {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['"Space Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
       },
+      gridTemplateColumns: {
+        '14': 'repeat(14, minmax(0, 1fr))',
+      },
       animation: {
         'blob': 'blob 7s infinite',
         'fade-in': 'fadeIn 0.5s ease-out forwards',

@@ -108,6 +108,42 @@ function createCommonMistakes(title: string) {
 - Ignoring how changes in data shape or execution order affect the final result.`;
 }
 
+function createQuizContent(title: string) {
+  const topic = title.replace(/`/g, '');
+  return {
+    title: `${topic} Knowledge Check`,
+    passingPct: 70,
+    questions: [
+      {
+        prompt: `Which of the following best describes the core utility of ${topic}?`,
+        type: 'mcq' as const,
+        points: 10,
+        choices: [
+          `It is primarily used for CSS formatting and browser painting.`,
+          `It manages internal data representations and execution sequences.`,
+          `It acts solely as a persistent database layer.`,
+          `It replaces the need for continuous integration testing.`
+        ],
+        correct: [1],
+        explanation: `${topic} fundamentally deals with managing logic, data sequences, or system state in the engineering workflow.`
+      },
+      {
+        prompt: `Select all the common pitfalls engineers face when implementing ${topic}:`,
+        type: 'multi' as const,
+        points: 10,
+        choices: [
+          `Ignoring input validation and edge cases.`,
+          `Writing too many inline comments.`,
+          `Failing to update package-lock.json.`,
+          `Not understanding how order of execution affects the overall state.`
+        ],
+        correct: [0, 3],
+        explanation: 'Failing to parse the execution flow and missing edge cases are the most critical architectural pitfalls.'
+      }
+    ]
+  };
+}
+
 function createLessonSections(lesson: CurriculumLesson, module: CurriculumModule, course: CurriculumCourse): LessonSections {
   const topic = lesson.title.replace(/`/g, '');
   const moduleContext = module.title;
@@ -222,6 +258,14 @@ async function seed() {
             title: eventLoopContent.quiz.title,
             passingPct: eventLoopContent.quiz.passingPct,
             questions: eventLoopContent.quiz.questions,
+          });
+        } else {
+          const generatedQuiz = createQuizContent(lesson.title);
+          await Quiz.create({
+            lessonId: lesson._id,
+            title: generatedQuiz.title,
+            passingPct: generatedQuiz.passingPct,
+            questions: generatedQuiz.questions,
           });
         }
       }

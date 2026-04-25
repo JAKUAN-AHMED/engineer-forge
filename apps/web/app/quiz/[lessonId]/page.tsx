@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/store';
 import type { QuizPublic, QuizResult } from '@forge/shared';
+import { motion } from 'framer-motion';
 
 export default function QuizPage({ params }: { params: { lessonId: string } }) {
   const { accessToken } = useAuth();
@@ -46,90 +47,146 @@ export default function QuizPage({ params }: { params: { lessonId: string } }) {
     }
   }
 
-  if (err) return <div className="text-red-400">{err}</div>;
-  if (!quiz) return <div className="text-ink-400">Loading quiz…</div>;
+  if (err) return (
+    <div className="flex h-[70vh] items-center justify-center">
+      <div className="glass-card p-8 text-center text-error border-error/20 bg-error/5 max-w-md">
+        <h2 className="text-xl font-bold mb-2">Error loading quiz</h2>
+        <p className="text-sm">{err}</p>
+      </div>
+    </div>
+  );
+
+  if (!quiz) return (
+    <div className="flex h-[70vh] items-center justify-center space-y-4 flex-col">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface border-t-primary" />
+      <span className="text-text-secondary font-semibold animate-pulse text-sm uppercase tracking-widest">Loading assessment...</span>
+    </div>
+  );
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1">{quiz.title}</h1>
-      <div className="text-xs text-ink-400 mb-6">Passing: {quiz.passingPct}%</div>
-
-      {quiz.questions.map((q, i) => {
-        const picked = (answers[i] as number[] | string) ?? (q.type === 'short' || q.type === 'code-output' ? '' : []);
-        const feedback = result?.perQuestion[i];
-        return (
-          <div key={i} className={`rounded-xl border p-5 mb-4 ${
-            feedback ? (feedback.correct ? 'border-green-500/50 bg-green-500/5' : 'border-red-500/50 bg-red-500/5') : 'border-ink-800 bg-ink-900/40'
-          }`}>
-            <div className="text-sm text-ink-400">Question {i + 1} · {q.points} pts</div>
-            <pre className="text-white font-sans whitespace-pre-wrap mt-1">{q.prompt}</pre>
-            {(q.type === 'mcq' || q.type === 'multi') && q.choices && (
-              <div className="mt-3 space-y-2">
-                {q.choices.map((c, idx) => (
-                  <label key={idx} className="flex items-start gap-2 text-sm">
-                    <input
-                      type={q.type === 'mcq' ? 'radio' : 'checkbox'}
-                      name={`q${i}`}
-                      checked={Array.isArray(picked) ? picked.includes(idx) : false}
-                      onChange={() => toggle(i, idx, q.type === 'multi')}
-                      disabled={!!result}
-                      className="mt-1"
-                    />
-                    <span className="text-ink-100">{c}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-            {(q.type === 'short' || q.type === 'code-output') && (
-              <input
-                type="text"
-                value={typeof picked === 'string' ? picked : ''}
-                onChange={(e) => setAns(i, e.target.value)}
-                disabled={!!result}
-                placeholder="Your answer"
-                className="mt-3 w-full bg-ink-950 border border-ink-700 rounded-lg px-3 py-2 text-ink-100 font-mono text-sm"
-              />
-            )}
-            {feedback && (
-              <div className="mt-3 text-sm text-ink-300 border-t border-ink-800 pt-3">
-                <strong className={feedback.correct ? 'text-green-400' : 'text-red-400'}>
-                  {feedback.correct ? '✓ Correct' : '✗ Incorrect'}
-                </strong>{' '}
-                — {feedback.explanation}
-              </div>
-            )}
+    <div className="max-w-3xl mx-auto py-8">
+      <div className="glass-card p-8 md:p-10 mb-8 relative overflow-hidden">
+        <div className="absolute right-0 bottom-0 h-48 w-48 bg-gradient-to-tr from-secondary/20 to-transparent blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.26em] text-secondary">Knowledge Check</div>
+            <h1 className="mt-2 text-3xl md:text-4xl font-extrabold text-text-primary drop-shadow-sm">{quiz.title}</h1>
           </div>
-        );
-      })}
-
-      {!result ? (
-        <button
-          onClick={submit}
-          disabled={submitting || !accessToken}
-          className="px-5 py-2.5 rounded-lg bg-brand-500 text-ink-950 font-semibold hover:bg-brand-400 disabled:opacity-50"
-        >
-          {submitting ? 'Grading…' : 'Submit quiz'}
-        </button>
-      ) : (
-        <div className={`rounded-xl p-5 border ${result.passed ? 'border-green-500/50 bg-green-500/10' : 'border-red-500/50 bg-red-500/10'}`}>
-          <div className="text-lg font-semibold text-white">
-            {result.passed ? '🎉 Passed' : 'Not quite — try again'}
-          </div>
-          <div className="text-sm text-ink-200 mt-1">
-            Score: {result.score} / {result.total} ({result.pct}%)
-            {result.xpAwarded > 0 && <span className="ml-2 text-brand-300">+{result.xpAwarded} XP</span>}
-          </div>
-          <div className="mt-3">
-            <Link href="/dashboard" className="underline">Back to dashboard</Link>
+          <div className="flex items-center gap-2 rounded-xl bg-surface/80 border border-border-glass px-4 py-2.5 shadow-sm">
+             <span className="text-xs uppercase font-bold text-text-secondary tracking-wider">Passing Score</span>
+             <span className="text-lg font-extrabold text-primary">{quiz.passingPct}%</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {!accessToken && (
-        <p className="text-xs text-ink-500 mt-3">
-          <Link href="/login">Sign in</Link> to submit this quiz.
-        </p>
-      )}
+      <div className="space-y-6">
+        {quiz.questions.map((q, i) => {
+          const picked = (answers[i] as number[] | string) ?? (q.type === 'short' || q.type === 'code-output' ? '' : []);
+          const feedback = result?.perQuestion[i];
+          return (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+              key={i} 
+              className={`glass-card p-6 md:p-8 transition-colors ${
+              feedback ? (feedback.correct ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5') : ''
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-bold uppercase tracking-wider text-secondary">Question {i + 1}</span>
+                <span className="rounded-md bg-surface border border-border-glass px-2.5 py-1 text-xs font-bold text-text-secondary shadow-sm">{q.points} pt{q.points !== 1 ? 's' : ''}</span>
+              </div>
+              <pre className="text-lg font-semibold text-text-primary whitespace-pre-wrap font-sans leading-relaxed">{q.prompt}</pre>
+              
+              {(q.type === 'mcq' || q.type === 'multi') && q.choices && (
+                <div className="mt-6 space-y-3">
+                  {q.choices.map((c, idx) => {
+                    const isSelected = Array.isArray(picked) ? picked.includes(idx) : false;
+                    return (
+                      <label key={idx} className={`group flex cursor-pointer items-start border p-4 rounded-xl transition-all ${
+                        isSelected ? 'bg-primary/10 border-primary shadow-sm' : 'bg-surface/50 border-border-glass hover:bg-surface'
+                      } ${feedback ? 'cursor-default pointer-events-none' : ''}`}>
+                        <div className="flex h-5 items-center">
+                          <input
+                            type={q.type === 'mcq' ? 'radio' : 'checkbox'}
+                            name={`q${i}`}
+                            checked={isSelected}
+                            onChange={() => toggle(i, idx, q.type === 'multi')}
+                            disabled={!!result}
+                            className={`h-4 w-4 bg-background border-border-glass transition-colors ${q.type === 'mcq' ? 'rounded-full' : 'rounded'}`}
+                          />
+                        </div>
+                        <div className="ml-3 text-sm font-medium text-text-primary">
+                          {c}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {(q.type === 'short' || q.type === 'code-output') && (
+                <input
+                  type="text"
+                  value={typeof picked === 'string' ? picked : ''}
+                  onChange={(e) => setAns(i, e.target.value)}
+                  disabled={!!result}
+                  placeholder={q.type === 'code-output' ? "Expected output..." : "Your answer..."}
+                  className="mt-6 w-full bg-background border border-border-glass rounded-xl px-4 py-3.5 text-text-primary font-mono text-sm shadow-inner focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:opacity-50"
+                />
+              )}
+
+              {feedback && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 pt-4 border-t border-border-glass">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className={`font-bold uppercase tracking-wider ${feedback.correct ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {feedback.correct ? '✓ Correct' : '✗ Incorrect'}
+                    </span>
+                    <span className="text-text-secondary">— {feedback.explanation}</span>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        {!result ? (
+          <div className="flex flex-col sm:flex-row w-full sm:justify-between items-center gap-4">
+            {!accessToken && (
+              <p className="text-sm font-semibold text-text-secondary">
+                <Link href="/login" className="text-primary hover:underline hover:text-secondary transition-colors">Sign in</Link> to submit this quiz.
+              </p>
+            )}
+            {accessToken && <div />}
+            <button
+              onClick={submit}
+              disabled={submitting || !accessToken}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 transition-all hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-primary/40 disabled:opacity-50 disabled:shadow-none disabled:transform-none"
+            >
+              {submitting ? 'Grading...' : 'Submit quiz'}
+            </button>
+          </div>
+        ) : (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className={`w-full glass-card p-8 border ${result.passed ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5'}`}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <div className={`text-2xl font-extrabold ${result.passed ? 'text-emerald-400' : 'text-text-primary'}`}>
+                  {result.passed ? '🎉 Passed' : 'Not quite — try again'}
+                </div>
+                <div className="text-base font-medium text-text-secondary mt-2 flex flex-wrap items-center gap-2">
+                  <span className="bg-surface border border-border-glass px-3 py-1 rounded-md shadow-sm text-text-primary font-bold">
+                    Score: {result.score} / {result.total} ({result.pct}%)
+                  </span>
+                  {result.xpAwarded > 0 && <span className="bg-primary/20 text-primary border border-primary/20 px-3 py-1 rounded-md shadow-sm font-bold">+{result.xpAwarded} XP</span>}
+                </div>
+              </div>
+              <Link href="/dashboard" className="w-full md:w-auto text-center rounded-xl bg-surface border border-border-glass px-6 py-3 text-sm font-bold text-text-primary shadow-sm hover:bg-surface/50 hover:shadow-md transition-all whitespace-nowrap">
+                Back to dashboard
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
